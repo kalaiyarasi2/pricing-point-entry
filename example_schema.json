@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "1.0",
+  "description": "Sample schema for insurance claim data extraction",
+  
+  "documentTypes": {
+    "PDF": "Primary document",
+    "EMAIL": "Email content"
+  },
+  
+  "fields": {
+    "claim_number": {
+      "type": "string",
+      "required": true,
+      "sources": ["PDF", "EMAIL"],
+      "sourcePriority": ["PDF", "EMAIL"],
+      "aliases": ["Claim #", "Claim Number", "Claim ID"],
+      "description": "Unique claim identifier"
+    },
+    
+    "insured_name": {
+      "type": "string",
+      "required": true,
+      "sources": ["PDF", "EMAIL"],
+      "aliases": ["Insured", "Company Name", "Policyholder"],
+      "description": "Name of the insured party"
+    },
+    
+    "total_incurred": {
+      "type": "number",
+      "required": false,
+      "sources": ["PDF"],
+      "aliases": ["Total Incurred", "Incurred Amount"],
+      "description": "Total incurred amount",
+      "format": "currency",
+      "minimum": 0
+    },
+    
+    "claim_date": {
+      "type": "string",
+      "required": false,
+      "sources": ["PDF"],
+      "format": "date",
+      "outputFormat": "YYYY-MM-DD",
+      "aliases": ["Date of Loss", "Loss Date", "Claim Date"],
+      "description": "Date when claim occurred"
+    }
+  },
+  
+  "globalRules": [
+    "Extract only data explicitly present in documents",
+    "Use null for missing optional fields",
+    "Preserve exact formatting for identifiers"
+  ],
+  
+  "outputSettings": {
+    "includeFieldSources": true,
+    "includeConflicts": true,
+    "includeMissingRequiredFields": true,
+    "includeWarnings": true
+  }
+}

@@ -1,0 +1,182 @@
+# ============================================================================
+# Python Document Processing Pipeline - .gitignore
+# ============================================================================
+
+# Environment and Secrets
+# ----------------------------------------------------------------------------
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+secrets/
+credentials/
+
+# Python
+# ----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual Environments
+# ----------------------------------------------------------------------------
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# IDE and Editors
+# ----------------------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+.project
+.pydevproject
+.settings/
+
+# Pipeline Working Directories and Output
+# ----------------------------------------------------------------------------
+pipeline/
+pipeline_workspace/
+output/
+temp/
+tmp/
+work/
+*.rostaing_temp.txt
+*.rostaing_layout.txt
+
+# PDF Processing Artifacts
+# ----------------------------------------------------------------------------
+*_fixed.pdf
+*_corrected.pdf
+*_rotated.pdf
+*_extracted.txt
+pipeline_report.json
+
+# OCR and Image Processing
+# ----------------------------------------------------------------------------
+*.jpg
+*.jpeg
+*.png
+*.tif
+*.tiff
+# Keep sample/test images if you have them
+!samples/*.jpg
+!samples/*.png
+!test/*.jpg
+!test/*.png
+
+# Logs
+# ----------------------------------------------------------------------------
+*.log
+logs/
+*.log.*
+
+# Testing
+# ----------------------------------------------------------------------------
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# Jupyter Notebooks
+# ----------------------------------------------------------------------------
+.ipynb_checkpoints
+*.ipynb
+
+# Database
+# ----------------------------------------------------------------------------
+*.db
+*.sqlite
+*.sqlite3
+
+# OS Files
+# ----------------------------------------------------------------------------
+Thumbs.db
+Desktop.ini
+.DS_Store
+.Spotlight-V100
+.Trashes
+
+# Backup Files
+# ----------------------------------------------------------------------------
+*.bak
+*.backup
+*~
+
+# Large Files / Data
+# ----------------------------------------------------------------------------
+*.pdf
+# Uncomment if you want to track sample PDFs
+# !samples/*.pdf
+# !test/*.pdf
+
+# Temporary Files
+# ----------------------------------------------------------------------------
+*.tmp
+*.temp
+
+# Documentation Build
+# ----------------------------------------------------------------------------
+docs/_build/
+site/
+
+# Package Manager
+# ----------------------------------------------------------------------------
+poetry.lock
+Pipfile.lock
+
+# GPU/CUDA
+# ----------------------------------------------------------------------------
+*.pth
+*.pt
+models/
+checkpoints/
+
+# ============================================================================
+# Project-Specific Ignores
+# ============================================================================
+
+# Keep these example/template files
+!example_schema.json
+!.env.example
+
+# Workspace directories
+old/
+archive/
+scratch/
+experiments/
+
+# ============================================================================

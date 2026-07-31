@@ -1,0 +1,110 @@
+# ============================================================================
+# Requirements for Document Processing Pipeline
+# ============================================================================
+
+# Core PDF Processing
+# ----------------------------------------------------------------------------
+PyMuPDF>=1.23.0                # PDF manipulation and text extraction (fitz)
+pypdf>=3.17.0                  # PDF reading and writing
+pdfplumber>=0.10.0             # Table-aware PDF text extraction
+
+# OCR and Image Processing
+# ----------------------------------------------------------------------------
+pdf2image>=1.16.0              # Convert PDF pages to images
+Pillow>=10.0.0                 # Image processing library
+pytesseract>=0.3.10            # OCR wrapper for Tesseract
+opencv-python>=4.8.0           # Computer vision for skew detection
+numpy>=1.24.0                  # Array operations for image processing
+
+# Advanced OCR (Optional but Recommended)
+# ----------------------------------------------------------------------------
+# rostaing-ocr>=1.0.0          # Layout-preserving OCR (uncomment if using schema_ocr.py)
+                                # Note: May require additional ML dependencies
+
+# LLM and AI Integration
+# ----------------------------------------------------------------------------
+openai>=1.12.0                 # OpenAI API client for structured extraction
+python-dotenv>=1.0.0           # Environment variable management
+
+# Data Validation and Schema
+# ----------------------------------------------------------------------------
+jsonschema>=4.20.0             # JSON schema validation
+beautifulsoup4>=4.12.0         # HTML parsing for email content
+
+# Security and Cryptography
+# ----------------------------------------------------------------------------
+cryptography>=41.0.0           # Required by pypdf for encrypted PDFs
+
+# API Server (Swagger UI testing)
+# ----------------------------------------------------------------------------
+fastapi>=0.110.0               # REST API + auto-generated Swagger UI
+uvicorn[standard]>=0.27.0      # ASGI server
+python-multipart>=0.0.9        # Multipart file upload support
+
+# Utilities
+# ----------------------------------------------------------------------------
+pathlib>=1.0.1                 # Path manipulation (usually built-in Python 3.4+)
+
+# Optional: Parallel Processing Enhancements
+# ----------------------------------------------------------------------------
+# concurrent.futures is built-in for Python 3.2+
+
+# ============================================================================
+# INSTALLATION NOTES
+# ============================================================================
+#
+# 1. Install Python 3.8 or higher
+#    https://www.python.org/downloads/
+#
+# 2. Install Tesseract OCR (required for pytesseract)
+#    Windows: https://github.com/UB-Mannheim/tesseract/wiki
+#    macOS: brew install tesseract
+#    Linux: sudo apt-get install tesseract-ocr
+#
+# 3. Install Poppler (required for pdf2image)
+#    Windows: Download from https://github.com/oschwartz10612/poppler-windows/releases
+#             Add bin/ folder to PATH
+#    macOS: brew install poppler
+#    Linux: sudo apt-get install poppler-utils
+#
+# 4. Install Python dependencies:
+#    pip install -r requirements.txt
+#
+# 5. (Optional) For GPU acceleration with rostaing-ocr:
+#    Follow rostaing-ocr documentation for CUDA/GPU setup
+#
+# ============================================================================
+# ENVIRONMENT VARIABLES (.env file)
+# ============================================================================
+#
+# Create a .env file in the project root with:
+#
+# # OpenAI Configuration
+# OPENAI_API_KEY=your-openai-api-key-here
+# OPENAI_MODEL=gpt-4o
+# OPENAI_BASE_URL=https://api.openai.com/v1
+# LLM_TIMEOUT=120
+#
+# # Tesseract Path (Windows only, if not in PATH)
+# TESSERACT_PATH=C:\Program Files\Tesseract-OCR\tesseract.exe
+#
+# # Poppler Path (Windows only, if not in PATH)
+# POPPLER_PATH=C:\poppler\Library\bin
+#
+# ============================================================================
+# DEVELOPMENT DEPENDENCIES (Optional)
+# ============================================================================
+#
+# pytest>=7.4.0                # Testing framework
+# black>=23.0.0                # Code formatting
+# pylint>=3.0.0                # Code linting
+# mypy>=1.5.0                  # Type checking
+#
+# ============================================================================
+# VERSION COMPATIBILITY
+# ============================================================================
+#
+# Python: 3.8+
+# Tested on: Python 3.9, 3.10, 3.11
+#
+# ============================================================================

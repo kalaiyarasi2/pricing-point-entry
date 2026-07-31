@@ -1,0 +1,374 @@
+openapi: 3.0.3
+info:
+  title: Pricing Point Entry API
+  description: |
+    Upload a GHQ/prospect **PDF** and a prospect **email** (.eml or .txt),
+    run the document processing pipeline, and download structured JSON
+    aligned with PricingPoint fields.
+
+    ## How to test in Swagger UI
+
+    1. Start the API server: `python api.py`
+    2. Open Swagger UI: http://localhost:8058/docs
+    3. Use **POST /api/v1/extract**
+    4. Upload `pdf_file` and `email_file`
+    5. Click **Execute** — the response is JSON you can copy or download
+
+    ## Supported inputs
+
+    | Field | Format | Required |
+    |-------|--------|----------|
+    | `pdf_file` | PDF (digital or scanned GHQ) | Yes |
+    | `email_file` | `.eml` or `.txt` prospect email | Yes |
+  version: 1.0.0
+  contact:
+    name: Pricing Point Entry POC
+
+servers:
+  - url: http://localhost:8058
+    description: Local development server
+
+tags:
+  - name: Extraction
+    description: Document upload and structured data extraction
+  - name: Health
+    description: Service health checks
+
+paths:
+  /api/v1/extract:
+    post:
+      tags:
+        - Extraction
+      summary: Extract PricingPoint prospect data
+      description: |
+        Accepts two uploaded files, runs the full pipeline (PDF rotation,
+        text extraction, LLM schema mapping), and returns structured JSON.
+
+        The response uses `Content-Disposition: attachment` so browsers and
+        Swagger UI treat it as a downloadable JSON file.
+      operationId: extractProspectData
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - pdf_file
+                - email_file
+              properties:
+                pdf_file:
+                  type: string
+                  format: binary
+                  description: GHQ or prospect PDF document
+                email_file:
+                  type: string
+                  format: binary
+                  description: Prospect email (.eml or plain .txt)
+                no_rotation:
+                  type: boolean
+                  default: false
+                  description: Skip PDF rotation pre-processing stage
+                extraction_method:
+                  type: string
+                  enum:
+                    - auto
+                    - pdfplumber
+                    - schema_ocr
+                  default: auto
+                  description: Force a specific PDF text extraction method
+            encoding:
+              pdf_file:
+                contentType: application/pdf
+              email_file:
+                contentType: message/rfc822, text/plain
+      responses:
+        '200':
+          description: Structured prospect data (JSON file download)
+          headers:
+            Content-Disposition:
+              description: Attachment filename for JSON download
+              schema:
+                type: string
+                example: attachment; filename="prospect_data.json"
+            X-Processing-Duration-Seconds:
+              description: Total pipeline duration in seconds
+              schema:
+                type: number
+                format: float
+                example: 14.22
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtractionResponse'
+              example:
+                success: true
+                data:
+                  location_name: TLW Construction
+                  address: "2085 E Technology Circle, #100"
+                  city: Tempe
+                  state: AZ
+                  zipcode: "85284"
+                  fed_tax_id: 86-0455130
+                  naics_number: "236220"
+                  prospect_type: PEO
+                  current_carrier_tpa: BCBS
+                fieldSources:
+                  location_name: EMAIL
+                  address: EMAIL
+                  fed_tax_id: EMAIL
+                conflicts: []
+                missingRequiredFields: []
+                warnings: []
+                metadata:
+                  model: gpt-4o
+                  schemaVersion: "1.0"
+                  processedAtUtc: "2026-07-30T11:14:27Z"
+        '400':
+          description: Invalid input (missing files, wrong format)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: "pdf_file must be a PDF (.pdf)"
+        '422':
+          description: Validation error (FastAPI request validation)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '500':
+          description: Pipeline or LLM processing failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: "Structured extraction failed: OpenAI API key not configured"
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Returns service status and whether required configuration is present.
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is running
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: ok
+                schema: prospect_schema.json
+                openai_configured: true
+
+components:
+  schemas:
+    ProspectData:
+      type: object
+      description: PricingPoint-aligned prospect fields extracted from documents
+      properties:
+        location_name:
+          type: string
+          example: TLW Construction
+        dba:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        title:
+          type: string
+        contact_type:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        cellphone:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zipcode:
+          type: string
+        county:
+          type: string
+        states_where_operating:
+          type: string
+        website:
+          type: string
+        fed_tax_id:
+          type: string
+        corporation_type:
+          type: string
+        description_of_operations:
+          type: string
+        naics_number:
+          type: string
+        sic_number:
+          type: string
+        prospect_type:
+          type: string
+        lead_source:
+          type: string
+        current_carrier_tpa:
+          type: string
+        additional_carrier:
+          type: string
+        carrier:
+          type: string
+        current_pr_peo_provider:
+          type: string
+        renewal_date_of_current_coverage:
+          type: string
+          format: date
+        requested_effective_date:
+          type: string
+          format: date
+        payroll_frequency:
+          type: string
+        percentage_of_ownership:
+          type: string
+        ownership_option:
+          type: string
+        inc_exc:
+          type: string
+        share_file_client_folder_link:
+          type: string
+
+    FieldSourceMap:
+      type: object
+      additionalProperties:
+        type: string
+        enum:
+          - EMAIL
+          - PDF
+          - DEFAULT
+          - MANUAL
+          - DERIVED
+      example:
+        location_name: EMAIL
+        address: EMAIL
+        county: PDF
+        dba: DEFAULT
+
+    ConflictEntry:
+      type: object
+      properties:
+        field:
+          type: string
+        values:
+          type: array
+          items:
+            type: object
+            properties:
+              source:
+                type: string
+              value: {}
+        selectedSource:
+          type: string
+        selectedValue: {}
+        reason:
+          type: string
+
+    ExtractionMetadata:
+      type: object
+      properties:
+        model:
+          type: string
+          example: gpt-4o
+        schemaVersion:
+          type: string
+          example: "1.0"
+        processedAtUtc:
+          type: string
+          format: date-time
+        inputFiles:
+          type: object
+          additionalProperties:
+            type: string
+
+    ExtractionResponse:
+      type: object
+      required:
+        - success
+        - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/ProspectData'
+        errors:
+          type: array
+          items:
+            type: string
+        metadata:
+          $ref: '#/components/schemas/ExtractionMetadata'
+        fieldSources:
+          $ref: '#/components/schemas/FieldSourceMap'
+        conflicts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConflictEntry'
+        missingRequiredFields:
+          type: array
+          items:
+            type: string
+        warnings:
+          type: array
+          items:
+            type: string
+
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+        detail:
+          type: string
+
+    ValidationErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: array
+          items:
+            type: object
+            properties:
+              loc:
+                type: array
+                items: {}
+              msg:
+                type: string
+              type:
+                type: string
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        schema:
+          type: string
+          example: prospect_schema.json
+        openai_configured:
+          type: boolean

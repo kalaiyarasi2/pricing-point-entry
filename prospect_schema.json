@@ -1,0 +1,541 @@
+{
+  "schemaVersion": "1.0",
+  "description": "Schema for extracting prospect/underwriting data from GHQ documents and emails - aligned with PricingPoint fields",
+  
+  "documentTypes": {
+    "PDF": "GHQ, questionnaire, or prospect document",
+    "EMAIL": "Prospect data submission email"
+  },
+  
+  "fields": {
+    "location_name": {
+      "type": "string",
+      "required": true,
+      "sources": ["EMAIL", "PDF"],
+      "sourcePriority": ["EMAIL", "PDF"],
+      "aliases": [
+        "Location Name",
+        "Account Name",
+        "Company Name",
+        "Client Name",
+        "Business Name",
+        "Insured Name",
+        "Opportunity Name"
+      ],
+      "description": "Name of the prospect company/location"
+    },
+    
+    "dba": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "default": "No DBA",
+      "aliases": [
+        "DBA",
+        "Doing Business As",
+        "Trade Name",
+        "d/b/a"
+      ],
+      "description": "Doing Business As name"
+    },
+    
+    "first_name": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "default": "",
+      "aliases": [
+        "First Name",
+        "Contact First Name",
+        "Primary Contact First Name"
+      ],
+      "description": "First name of primary contact - leave empty if not in GHQ or email"
+    },
+    
+    "last_name": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "default": "",
+      "aliases": [
+        "Last Name",
+        "Contact Last Name",
+        "Primary Contact Last Name"
+      ],
+      "description": "Last name of primary contact - leave empty if not in GHQ or email"
+    },
+    
+    "title": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "default": "",
+      "aliases": [
+        "Title",
+        "Job Title",
+        "Position",
+        "Primary Contact Title"
+      ],
+      "description": "Job title of primary contact - leave empty if not in GHQ or email"
+    },
+    
+    "contact_type": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "default": "",
+      "aliases": [
+        "Contact Type",
+        "Type of Contact"
+      ],
+      "description": "Type of contact (Owner, HR Manager, Decision Maker, etc.) - leave empty if not in GHQ or email"
+    },
+    
+    "email": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "format": "email",
+      "default": "",
+      "aliases": [
+        "Email",
+        "Email Address",
+        "Contact Email",
+        "Primary Contact Email"
+      ],
+      "description": "Email address of primary contact - leave empty if not in GHQ or email"
+    },
+    
+    "phone": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "default": "",
+      "aliases": [
+        "Phone",
+        "Telephone",
+        "Phone Number",
+        "Contact Phone"
+      ],
+      "description": "Primary phone number - leave empty if not in GHQ or email"
+    },
+    
+    "cellphone": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "default": "",
+      "aliases": [
+        "Cellphone",
+        "Cell Phone",
+        "Mobile",
+        "Mobile Phone",
+        "Cell"
+      ],
+      "description": "Mobile/cell phone number - leave empty if not in GHQ or email"
+    },
+    
+    "address": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "aliases": [
+        "Address",
+        "Street",
+        "Street Address",
+        "Billing Address",
+        "Address Line 1",
+        "Physical Address"
+      ],
+      "description": "Street address"
+    },
+    
+    "city": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "aliases": [
+        "City",
+        "Billing City"
+      ],
+      "description": "City"
+    },
+    
+    "state": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "aliases": [
+        "State",
+        "Billing State",
+        "State/Province"
+      ],
+      "description": "State abbreviation"
+    },
+    
+    "zipcode": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "aliases": [
+        "Zipcode",
+        "Zip Code",
+        "Zip/Postal Code",
+        "Zip",
+        "Postal Code",
+        "ZIP"
+      ],
+      "description": "ZIP or postal code"
+    },
+    
+    "county": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "aliases": [
+        "County"
+      ],
+      "description": "County name"
+    },
+    
+    "states_where_operating": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "aliases": [
+        "States Where Operating",
+        "Operating States",
+        "States of Operation",
+        "Coverage States"
+      ],
+      "description": "States where operating (ex: NJ, NY, PA)"
+    },
+    
+    "website": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "default": "No Website",
+      "aliases": [
+        "Website",
+        "Web Site",
+        "URL",
+        "Company Website"
+      ],
+      "description": "Company website URL"
+    },
+    
+    "fed_tax_id": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "sourcePriority": ["EMAIL", "PDF"],
+      "aliases": [
+        "Fed Tax ID",
+        "Federal Tax ID",
+        "FEIN",
+        "Tax Id",
+        "FEIN/Tax Id",
+        "EIN",
+        "Employer ID"
+      ],
+      "description": "Federal Employer Identification Number"
+    },
+    
+    "corporation_type": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "default": "Others",
+      "allowedValues": [
+        "Corporation",
+        "LLC",
+        "Partnership",
+        "Sole Proprietorship",
+        "S-Corp",
+        "C-Corp",
+        "Non-Profit",
+        "Others",
+        "Other"
+      ],
+      "aliases": [
+        "Corporation Type",
+        "Entity Type",
+        "Business Structure",
+        "Legal Entity Type"
+      ],
+      "description": "Type of business entity"
+    },
+    
+    "description_of_operations": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "aliases": [
+        "Description of Operations",
+        "Operations Description",
+        "Business Description",
+        "What does the company do",
+        "Nature of Business",
+        "SIC Code",
+        "Industry"
+      ],
+      "description": "Description of business operations - can be derived from SIC code description (e.g., '2390 - Miscellaneous Fabricated Textile Products')"
+    },
+    
+    "naics_number": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "aliases": [
+        "NAICS #",
+        "NAICS",
+        "NAICS Code",
+        "NAICS Number",
+        "Industry Code"
+      ],
+      "description": "NAICS industry classification code"
+    },
+    
+    "sic_number": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "aliases": [
+        "SIC #",
+        "SIC",
+        "SIC Code",
+        "SIC Number"
+      ],
+      "description": "SIC industry classification code"
+    },
+    
+    "prospect_type": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "default": "New Prospect",
+      "allowedValues": [
+        "PEO",
+        "ASO",
+        "Hybrid",
+        "Direct",
+        "New Prospect",
+        "Other"
+      ],
+      "aliases": [
+        "Prospect Type",
+        "Offering Type",
+        "Service Type",
+        "Product Type"
+      ],
+      "description": "Type of prospect/offering"
+    },
+    
+    "lead_source": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL"],
+      "aliases": [
+        "Lead Source",
+        "Lead/Ref/Opp Source",
+        "Referral Source",
+        "Source"
+      ],
+      "description": "Source of the lead/referral"
+    },
+    
+    "current_carrier_tpa": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "aliases": [
+        "Current Carrier / TPA",
+        "Current Carrier",
+        "Current Medical Carrier",
+        "Medical Carrier",
+        "Health Carrier",
+        "TPA"
+      ],
+      "description": "Current insurance carrier or TPA"
+    },
+    
+    "additional_carrier": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "aliases": [
+        "Additional Carrier",
+        "Secondary Carrier",
+        "WC Carrier",
+        "Workers Comp Carrier"
+      ],
+      "description": "Additional carrier (WC, etc.)"
+    },
+    
+    "carrier": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "default": "",
+      "aliases": [
+        "Carrier"
+      ],
+      "description": "Insurance carrier name - leave empty if not specified separately from current_carrier_tpa"
+    },
+    
+    "current_pr_peo_provider": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "default": "No Carrier",
+      "aliases": [
+        "Current PR/PEO Provider",
+        "Current PEO",
+        "Current PR Provider",
+        "Current Payroll Provider",
+        "Payroll Provider"
+      ],
+      "description": "Current payroll or PEO provider"
+    },
+    
+    "renewal_date_of_current_coverage": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "format": "date",
+      "outputFormat": "YYYY-MM-DD",
+      "aliases": [
+        "Renewal date of the Current Coverage",
+        "Renewal Date",
+        "Current Renewal Date",
+        "Medical Renewal Date",
+        "Policy Renewal Date",
+        "Coverage Renewal"
+      ],
+      "description": "Renewal date of current coverage"
+    },
+    
+    "requested_effective_date": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "format": "date",
+      "outputFormat": "YYYY-MM-DD",
+      "aliases": [
+        "Requested Effective Date",
+        "Effective Date",
+        "Benefits Effective Date",
+        "Start Date",
+        "Policy Effective Date",
+        "Proposed Effective Date"
+      ],
+      "description": "Requested effective date for new coverage"
+    },
+    
+    "payroll_frequency": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "default": "No Payroll Frequency In GHQ",
+      "allowedValues": [
+        "Weekly",
+        "Bi-Weekly",
+        "Semi-Monthly",
+        "Monthly",
+        "No Payroll Frequency In GHQ",
+        "Other"
+      ],
+      "aliases": [
+        "Payroll Frequency",
+        "Pay Frequency",
+        "Payroll Schedule"
+      ],
+      "description": "Frequency of payroll processing"
+    },
+    
+    "percentage_of_ownership": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "default": "1%",
+      "aliases": [
+        "% of Ownership",
+        "Percentage of Ownership",
+        "Ownership Percentage",
+        "Ownership %"
+      ],
+      "description": "Percentage of ownership"
+    },
+    
+    "ownership_option": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "default": "Publically Traded",
+      "aliases": [
+        "Ownership Option"
+      ],
+      "description": "Ownership option details"
+    },
+    
+    "inc_exc": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL", "PDF"],
+      "default": "No",
+      "allowedValues": [
+        "Included",
+        "Excluded",
+        "INC",
+        "EXC",
+        "Yes",
+        "No"
+      ],
+      "aliases": [
+        "INC / Exc",
+        "Inc/Exc",
+        "Included/Excluded",
+        "INC"
+      ],
+      "description": "Inclusion or exclusion status"
+    },
+    
+    "share_file_client_folder_link": {
+      "type": "string",
+      "required": false,
+      "sources": ["EMAIL"],
+      "default": "Need to Capture in SF",
+      "aliases": [
+        "Share File Client Folder Link",
+        "ShareFile Link",
+        "Client Folder Link",
+        "Document Link",
+        "Shared Folder"
+      ],
+      "description": "Link to shared file or client folder"
+    }
+  },
+  
+  "globalRules": [
+    "Extract only data explicitly present in the documents",
+    "Do not invent, guess, or hallucinate values",
+    "Use the configured default value for missing optional fields",
+    "Preserve exact spelling and formatting for IDs and codes",
+    "Convert dates to ISO 8601 format (YYYY-MM-DD) when outputFormat is specified",
+    "For fields with allowedValues, only use values that match the list (case-insensitive)",
+    "When a field appears in both EMAIL and PDF, use sourcePriority to select",
+    "Extract FEIN/Tax IDs with exact formatting (including dashes)",
+    "Extract Salesforce links and IDs from URLs if present",
+    "If a GHQ field is blank or shows only the label with no value, use the default value",
+    "Recognize patterns like 'No DBA', 'No Website', 'No Carrier' as intentional indicators of absence",
+    "When description_of_operations references SIC code description, extract that as the operations description"
+  ],
+  
+  "outputSettings": {
+    "includeFieldSources": true,
+    "includeConflicts": true,
+    "includeMissingRequiredFields": true,
+    "includeWarnings": true
+  }
+}
