@@ -29,6 +29,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 
 from app import DocumentProcessingPipeline, PipelineConfig
+from restructure_json import JSONRestructurer
 
 load_dotenv()
 
@@ -96,6 +97,11 @@ async def extract_prospect_data(
         "auto",
         description="PDF extraction method: auto, pdfplumber, or schema_ocr",
     ),
+    format: str = Form(
+        "flat",
+        description="Output format: flat (34 fields only - cleanest) or structured (organized by category)",
+    ),
+    pretty_print: bool = Form(True, description="Format JSON with indentation for readability"),
 ):
     _validate_upload(pdf_file, {".pdf"}, "pdf_file")
     _validate_upload(email_file, {".eml", ".txt"}, "email_file")
@@ -104,6 +110,12 @@ async def extract_prospect_data(
         raise HTTPException(
             status_code=400,
             detail="extraction_method must be one of: auto, pdfplumber, schema_ocr",
+        )
+    
+    if format not in {"structured", "flat"}:
+        raise HTTPException(
+            status_code=400,
+            detail="format must be either 'structured' or 'flat'",
         )
 
     if not DEFAULT_SCHEMA.exists():
@@ -152,18 +164,53 @@ async def extract_prospect_data(
         if not structured:
             raise HTTPException(status_code=500, detail="Pipeline completed but produced no structured data")
 
+        # Determine output based on format
+        if format == "structured":
+            # Return full structured format with categories, summary, etc.
+            restructurer = JSONRestructurer(str(DEFAULT_SCHEMA))
+            output_data = restructurer.restructure(structured)
+        elif format == "flat":
+            # Return ONLY the 34 data fields (cleanest)
+            output_data = structured.get("data", {})
+        else:
+            # Default: return original extraction result
+            output_data = structured
+
         duration = result.get("duration_seconds", 0)
-        account = structured.get("data", {}).get("location_name", "prospect")
+        
+        # Get account name for filename
+        if format == "flat":
+            account = output_data.get("location_name", "prospect")
+        else:
+            account = structured.get("data", {}).get("location_name", "prospect")
+        
         safe_account = "".join(c if c.isalnum() or c in "-_" else "_" for c in str(account))
         filename = f"{safe_account or 'prospect'}_data.json"
-
-        return JSONResponse(
-            content=structured,
-            headers={
-                "Content-Disposition": f'attachment; filename="{filename}"',
-                "X-Processing-Duration-Seconds": str(duration),
-            },
-        )
+        
+        # Prepare response with proper formatting
+        if pretty_print:
+            # Return formatted JSON as plain text with proper content type
+            from fastapi.responses import Response
+            json_str = json.dumps(output_data, indent=2, ensure_ascii=False)
+            return Response(
+                content=json_str,
+                media_type="application/json",
+                headers={
+                    "Content-Disposition": f'attachment; filename="{filename}"',
+                    "X-Processing-Duration-Seconds": str(duration),
+                    "X-Output-Format": format,
+                },
+            )
+        else:
+            # Return compact JSON
+            return JSONResponse(
+                content=output_data,
+                headers={
+                    "Content-Disposition": f'attachment; filename="{filename}"',
+                    "X-Processing-Duration-Seconds": str(duration),
+                    "X-Output-Format": format,
+                },
+            )
 
     except HTTPException:
         raise
