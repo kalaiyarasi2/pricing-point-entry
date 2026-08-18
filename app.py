@@ -19,11 +19,12 @@ Usage:
 import argparse
 import json
 import os
+import re
 import sys
 import logging
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, Dict, Any, Tuple, Tuple
+from typing import Optional, Dict, Any, List, Tuple
 
 # Import pipeline modules
 from pdf_detector import PDFDetector
@@ -44,6 +45,194 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 LOGGER = logging.getLogger("app")
+
+# ---------------------------------------------------------------------------
+# PDF filename client-name detection
+# ---------------------------------------------------------------------------
+
+# Words that appear in GHQ filenames but are NOT client names.
+# Anything in the stem that isn't one of these is treated as a client-name token.
+_FILENAME_STOP_WORDS: set = {
+    "ghq", "resourcing", "edge", "group", "health", "questionnaire",
+    "prospect", "data", "for", "pricingpoint", "aura", "od", "at",
+    "uw", "stage", "acct", "name", "tlw", "industrial",
+    "and", "the", "of", "pdf", "form", "doc",
+    "document", "new", "coverage", "medical", "insurance", "benefit",
+    "benefits", "plan", "quote", "rfp", "proposal", "census",
+}
+
+
+def _filename_has_client_name(pdf_path: Path) -> bool:
+    """
+    Return True when the PDF filename appears to encode a client/company name.
+
+    Strategy: tokenise the stem on underscores, spaces, hyphens, and percent-
+    encoded spaces (%20), lower-case each token, and check whether at least one
+    token is NOT in the stop-word list and is longer than 2 characters.  That
+    surviving token is assumed to be a client-name fragment.
+
+    Examples that return True
+    -------------------------
+    GHQ_Resourcing_Edge_DirectorCorps.pdf        → "DirectorCorps"
+    Summit Health Questionnaire.pdf              → "Summit" (non-stop)
+    GHQ_Resourcing_Edge_5498LLC Perspective Planning Partners.pdf → "Perspective", "Planning", "Partners"
+
+    Examples that return False
+    --------------------------
+    GHQ_form.pdf                                 → all tokens are stop words
+    """
+    stem = pdf_path.stem
+    # Decode percent-encoding and normalise separators
+    stem = stem.replace("%20", " ").replace("_", " ").replace("-", " ")
+    tokens = re.split(r"\s+", stem)
+    for token in tokens:
+        clean = re.sub(r"[^a-zA-Z0-9]", "", token).lower()
+        if len(clean) > 2 and clean not in _FILENAME_STOP_WORDS:
+            return True
+    return False
+
+
+# ---------------------------------------------------------------------------
+# Print Name extraction from PDF text
+# ---------------------------------------------------------------------------
+
+# In GHQ / Resourcing Edge documents, pdfplumber reads the signature block
+# top-to-bottom, producing this layout:
+#
+#   Melissa Burleson           OneDigital
+#   Print Name                 Print Name of Company
+#
+# i.e. the PERSON'S name appears on the line ABOVE the "Print Name" label.
+# The same-line "Print Name of Company" column must be ignored.
+#
+# Pattern A (primary): capture the left column of the line immediately
+# preceding a line that contains "Print Name" but NOT "Print Name of Company".
+# Left column ends at the first run of 2+ spaces (pdfplumber column separator).
+_PRINT_NAME_ABOVE_PATTERN = re.compile(
+    r"""
+    ^[ \t]*                          # start of line (optional indent)
+    ([A-Z][A-Za-z'\-]+               # first word, capital-initial
+     (?:[ \t][A-Za-z'\-]+)*)         # zero or more single-space-separated words
+    (?:[ \t]{2,}[^\n]*)?             # optionally followed by 2+ spaces + company column
+    \n                               # end of the name line
+    [ \t]*Print\s+Name               # next line starts with "Print Name"
+    (?![ \t]+of[ \t]+Company)        # …but NOT "Print Name of Company"
+    """,
+    re.VERBOSE | re.MULTILINE,
+)
+
+# Pattern B (fallback): handles the rarer case where the name appears AFTER
+# the "Print Name" label on the same or next line (some form designs).
+# Uses a minimum of 2 spaces as separator guard so "Print Name" following
+# label whitespace cannot be captured as the person name.
+_PRINT_NAME_AFTER_PATTERN = re.compile(
+    r"""
+    \bPrint\s+Name\b                 # the label
+    (?!\s+of\s+Company)              # skip "Print Name of Company"
+    [ \t]{2,}                        # at least 2 spaces (not the label on the next col)
+    ([A-Z][A-Za-z'\-]+(?:[ \t]+[A-Z][A-Za-z'\-]+)+)   # same-line name
+    |
+    \bPrint\s+Name\b
+    (?!\s+of\s+Company)
+    [ \t]*\n[ \t]*
+    ([A-Z][A-Za-z'\-]+(?:[ \t]+[A-Z][A-Za-z'\-]+)+)  # next-line name
+    """,
+    re.VERBOSE | re.MULTILINE,
+)
+
+# Pattern C (last resort): scan for a capitalised 2+-word name immediately
+# after the Authorized Signature / certification block heading.
+_CERT_BLOCK_PATTERN = re.compile(
+    r"""
+    (?:CERTIFICATION\s+&\s+SIGNATURE|Authorized\s+Signature)
+    [\s\S]{0,600}?                   # up to 600 chars of intervening text
+    \n[ \t]*([A-Z][A-Za-z'\-]+       # capitalised first word on its own line
+             (?:[ \t]+[A-Za-z'\-]+)+)  # at least one more word
+    [ \t]*\n                         # end of line
+    [ \t]*Print\s+Name               # confirmed by "Print Name" on the line below
+    """,
+    re.VERBOSE | re.IGNORECASE,
+)
+
+# Words that must never be returned as a person name (form labels mistaken for names)
+_LABEL_BLACKLIST: set = {"print name", "authorized signature", "print name of company"}
+
+
+def _extract_print_name_from_pdf(extracted_text: str) -> Optional[str]:
+    """
+    Scan the extracted PDF text for the signer's printed name.
+
+    GHQ / Resourcing Edge documents place the name on the line ABOVE the
+    'Print Name' label (the name is the filled-in form value; the label is
+    printed beneath it).  Three patterns are tried in order:
+
+    A) Line immediately above 'Print Name' label (primary — covers all screenshots)
+    B) Name on the same or next line after 'Print Name' label (alternate layouts)
+    C) Name line confirmed by 'Print Name' label below, within the certification block
+
+    When the preceding line contains two columns separated by wide whitespace
+    (e.g. "Melissa Burleson           OneDigital"), only the left column is
+    kept — that is the person name; the right column is the company name.
+
+    The document tail (last 40 %) is searched first because the signature
+    block always appears at the end.
+    """
+    tail_start = max(0, int(len(extracted_text) * 0.60))
+    search_zones: List[str] = [extracted_text[tail_start:], extracted_text]
+
+    for zone in search_zones:
+        # Pattern A — name on line above "Print Name" label (most common layout)
+        m = _PRINT_NAME_ABOVE_PATTERN.search(zone)
+        if m:
+            raw = m.group(1).strip()
+            # If two columns were captured, keep only the left one
+            # (columns are separated by 2+ spaces in pdfplumber layout output)
+            left_col = re.split(r"[ \t]{2,}", raw)[0].strip()
+            if left_col and len(left_col.split()) >= 2 and left_col.lower() not in _LABEL_BLACKLIST:
+                LOGGER.info(f"   → Print Name found (above-label pattern): '{left_col}'")
+                return left_col
+
+        # Pattern B — name on same / next line after label
+        m = _PRINT_NAME_AFTER_PATTERN.search(zone)
+        if m:
+            raw = (m.group(1) or m.group(2) or "").strip()
+            left_col = re.split(r"[ \t]{2,}", raw)[0].strip()
+            if left_col and len(left_col.split()) >= 2 and left_col.lower() not in _LABEL_BLACKLIST:
+                LOGGER.info(f"   → Print Name found (after-label pattern): '{left_col}'")
+                return left_col
+
+        # Pattern C — certification block + confirmed by label below
+        m = _CERT_BLOCK_PATTERN.search(zone)
+        if m:
+            raw = m.group(1).strip()
+            left_col = re.split(r"[ \t]{2,}", raw)[0].strip()
+            if left_col and len(left_col.split()) >= 2 and left_col.lower() not in _LABEL_BLACKLIST:
+                LOGGER.info(f"   → Print Name found (cert-block pattern): '{left_col}'")
+                return left_col
+
+    return None
+
+
+def _split_name(full_name: str) -> Tuple[str, str]:
+    """
+    Split a full name into (first_name, last_name).
+
+    Handles:
+      "Melissa Burleson"        → ("Melissa", "Burleson")
+      "CJ Teply"                → ("CJ", "Teply")
+      "Erin Johnson"            → ("Erin", "Johnson")
+      "Mary Jo Smith"           → ("Mary Jo", "Smith")   # compound first name
+      Single word               → (word, "")
+    """
+    parts = full_name.strip().split()
+    if len(parts) == 0:
+        return "", ""
+    if len(parts) == 1:
+        return parts[0], ""
+    # Last token is the last name; everything before is the first name
+    last_name = parts[-1]
+    first_name = " ".join(parts[:-1])
+    return first_name, last_name
 
 
 class PipelineConfig:
@@ -536,6 +725,63 @@ class DocumentProcessingPipeline:
                     )
                     result = json.loads(response_text)
             
+            # ---------------------------------------------------------------
+            # Client-name check: if the PDF filename encodes a client name,
+            # extract the signer's Print Name from the document text and use
+            # it to populate first_name / last_name when the LLM left them
+            # blank (or didn't find them).
+            # ---------------------------------------------------------------
+            original_pdf_path = Path(self.state.get("pdf_path", ""))
+            if _filename_has_client_name(original_pdf_path):
+                LOGGER.info("\n" + "─" * 60)
+                LOGGER.info("CLIENT NAME DETECTED IN PDF FILENAME")
+                LOGGER.info("Attempting Print Name extraction from document…")
+                LOGGER.info("─" * 60)
+
+                try:
+                    pdf_text_content = Path(pdf_text_path).read_text(encoding="utf-8", errors="ignore")
+                    full_name = _extract_print_name_from_pdf(pdf_text_content)
+
+                    if full_name:
+                        first, last = _split_name(full_name)
+                        data = result.setdefault("data", {})
+                        field_sources = result.setdefault("fieldSources", {})
+
+                        # Only override fields that the LLM left empty
+                        changed: List[str] = []
+                        if not data.get("first_name") and first:
+                            data["first_name"] = first
+                            field_sources["first_name"] = "PDF_PRINT_NAME"
+                            changed.append(f"first_name='{first}'")
+                        if not data.get("last_name") and last:
+                            data["last_name"] = last
+                            field_sources["last_name"] = "PDF_PRINT_NAME"
+                            changed.append(f"last_name='{last}'")
+
+                        if changed:
+                            LOGGER.info(f"   ✓ Overrode: {', '.join(changed)}")
+                            result.setdefault("warnings", []).append(
+                                f"first_name/last_name populated from PDF Print Name field "
+                                f"('{full_name}') because filename indicated a client document."
+                            )
+                        else:
+                            LOGGER.info(
+                                "   ℹ LLM already populated first_name/last_name — "
+                                "Print Name extraction not applied."
+                            )
+                    else:
+                        LOGGER.warning(
+                            "   ⚠ Print Name not found in document text; "
+                            "first_name/last_name left as extracted by LLM."
+                        )
+                except Exception as exc:
+                    LOGGER.warning(f"   ⚠ Print Name extraction error: {exc}")
+            else:
+                LOGGER.info(
+                    "PDF filename does not indicate a client-specific document; "
+                    "skipping Print Name extraction."
+                )
+
             # Save output
             with open(output_path, 'w', encoding='utf-8') as f:
                 json.dump(result, f, indent=2, ensure_ascii=False)

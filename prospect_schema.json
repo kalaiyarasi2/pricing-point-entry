@@ -49,7 +49,7 @@
         "Contact First Name",
         "Primary Contact First Name"
       ],
-      "description": "First name of primary contact - leave empty if not in GHQ or email"
+      "description": "First name of primary contact. Extracted from the document when present. When the PDF filename identifies a client document, the pipeline also looks for a 'Print Name' field in the Certification & Signature section and splits it into first/last name if the LLM did not populate this field."
     },
     
     "last_name": {
@@ -62,7 +62,7 @@
         "Contact Last Name",
         "Primary Contact Last Name"
       ],
-      "description": "Last name of primary contact - leave empty if not in GHQ or email"
+      "description": "Last name of primary contact. Extracted from the document when present. When the PDF filename identifies a client document, the pipeline also looks for a 'Print Name' field in the Certification & Signature section and splits it into first/last name if the LLM did not populate this field."
     },
     
     "title": {
@@ -250,6 +250,7 @@
       "allowedValues": [
         "Corporation",
         "LLC",
+        "LLP",
         "Partnership",
         "Sole Proprietorship",
         "S-Corp",
@@ -264,7 +265,18 @@
         "Business Structure",
         "Legal Entity Type"
       ],
-      "description": "Type of business entity"
+      "inferFromLocationName": {
+        "enabled": true,
+        "condition": "Only apply when corporation_type is not found or blank in the document",
+        "rules": [
+          { "keyword": "LLC", "mapsTo": "LLC" },
+          { "keyword": "Corp", "mapsTo": "C-Corp" },
+          { "keyword": "INC", "mapsTo": "S-Corp" },
+          { "keyword": "LLP", "mapsTo": "LLP" }
+        ],
+        "note": "Keywords are matched case-insensitively against location_name. If no keyword matches, fall back to default value."
+      },
+      "description": "Type of business entity. If not found in the document, infer from keywords in location_name (LLC→LLC, Corp→C-Corp, INC→S-Corp, LLP→LLP). If no match, use default."
     },
     
     "description_of_operations": {
