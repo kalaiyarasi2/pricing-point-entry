@@ -33,6 +33,7 @@ from auto_rotation_ocr import run_pipeline_preserve_layout, run_pipeline
 from pdf_plumber import extract_pdf_hybrid, extract_pdf_with_pdfplumber
 from schema_ocr import SchemaOCRExtractor
 from email_parser import parse_email_file
+from gpt_vision_ocr import GPTVisionExtractor
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -565,50 +566,32 @@ class DocumentProcessingPipeline:
         extracted_text_path = self.work_dir / f"{pdf_path.stem}_extracted.txt"
         
         try:
-            # Determine extraction method
-            if self.config.extraction_method == "auto":
-                if is_scanned:
-                    method = "schema_ocr"
-                else:
-                    method = "pdfplumber"
-            else:
-                method = self.config.extraction_method
+            # Always attempt Rostaing OCR first, as requested by the user
+            self.state["extraction_method"] = "schema_ocr"
+            LOGGER.info("Running rostaing-ocr extraction...")
             
-            self.state["extraction_method"] = method
-            LOGGER.info(f"Using extraction method: {method}")
+            extractor = SchemaOCRExtractor(str(pdf_path))
+            text = ""
             
-            if method == "pdfplumber":
-                # Use pdf_plumber.py (best for digital PDFs with tables)
-                LOGGER.info("Running pdfplumber extraction...")
-                
-                if self.config.use_hybrid_extraction:
-                    text, pages, info = extract_pdf_hybrid(
-                        str(pdf_path),
-                        output_txt=str(extracted_text_path)
-                    )
-                    LOGGER.info(f"Hybrid extraction info: {info}")
-                else:
-                    text, pages = extract_pdf_with_pdfplumber(
-                        str(pdf_path),
-                        output_txt=str(extracted_text_path)
-                    )
-                
-                LOGGER.info(f"✓ Extracted {len(pages)} pages, {len(text)} characters")
-                
-            elif method == "schema_ocr":
-                # Use schema_ocr.py (best for scanned PDFs)
-                LOGGER.info("Running rostaing-ocr extraction...")
-                
-                extractor = SchemaOCRExtractor(str(pdf_path))
+            try:
                 text = extractor.extract_layout_text(
                     save_debug_output=self.config.save_debug_output
                 )
+            except Exception as ocr_err:
+                LOGGER.warning(f"rostaing-ocr encountered an error: {ocr_err}")
                 
-                # Save extracted text
-                with open(extracted_text_path, 'w', encoding='utf-8') as f:
-                    f.write(text)
-                
-                LOGGER.info(f"✓ Extracted {len(text)} characters")
+            # If Rostaing OCR fails or returns very little text, fallback to GPT Vision
+            if not text or len(text.strip()) < 50:
+                LOGGER.warning("rostaing-ocr returned insufficient text (< 50 chars) or failed. Falling back to GPT Vision OCR...")
+                self.state["extraction_method"] = "gpt_vision"
+                vision_extractor = GPTVisionExtractor()
+                text = vision_extractor.extract_text_from_pdf(str(pdf_path), max_pages=25)
+            
+            # Save extracted text
+            with open(extracted_text_path, 'w', encoding='utf-8') as f:
+                f.write(text)
+            
+            LOGGER.info(f"✓ Extracted {len(text)} characters")
             
             if extracted_text_path.exists():
                 LOGGER.info(f"✓ Extracted text saved: {extracted_text_path}")

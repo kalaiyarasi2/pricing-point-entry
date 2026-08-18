@@ -1,130 +1,186 @@
 {
   "schemaVersion": "1.0",
   "description": "Schema for extracting prospect/underwriting data from GHQ documents and emails - aligned with PricingPoint fields",
-  
   "documentTypes": {
     "PDF": "GHQ, questionnaire, or prospect document",
     "EMAIL": "Prospect data submission email"
   },
-  
   "fields": {
     "location_name": {
       "type": "string",
       "required": true,
-      "sources": ["EMAIL", "PDF"],
-      "sourcePriority": ["EMAIL", "PDF"],
-      "aliases": [
-        "Location Name",
-        "Account Name",
-        "Company Name",
-        "Client Name",
-        "Business Name",
-        "Insured Name",
-        "Opportunity Name"
+      "sources": [
+        "EMAIL",
+        "PDF"
       ],
-      "description": "Name of the prospect company/location"
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ],
+      "aliases": [
+        "Client Name",
+        "Legal Name",
+        "Business Name",
+        "Opportunity Name",
+        "Prospect Name",
+        "Insured Name",
+        "Account Name",
+        "Location Name",
+        "Company Name"
+      ],
+      "description": "Extract the company/location name from the PDF."
     },
-    
     "dba": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
-      "default": "No DBA",
+      "sources": [
+        "EMAIL",
+        "PDF"
+      ],
+      "default": null,
       "aliases": [
         "DBA",
         "Doing Business As",
         "Trade Name",
         "d/b/a"
       ],
-      "description": "Doing Business As name"
+      "description": "Extract the DBA (Doing Business As) name from the PDF. If not available, return null.",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "first_name": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
-      "default": "",
-      "aliases": [
-        "First Name",
-        "Contact First Name",
-        "Primary Contact First Name"
+      "sources": [
+        "EMAIL",
+        "PDF"
       ],
-      "description": "First name of primary contact. Extracted from the document when present. When the PDF filename identifies a client document, the pipeline also looks for a 'Print Name' field in the Certification & Signature section and splits it into first/last name if the LLM did not populate this field."
+      "default": null,
+      "aliases": [
+        "Company Contact",
+        "Benefit Contact Name",
+        "Company Contact Name",
+        "Benefit Contact",
+        "First Name"
+      ],
+      "description": "Extract the first name of the company/benefit contact person. Look for contact information represented as Company Contact, Benefit Contact Name, Company Contact Name, or Benefit Contact. If the contact person's full name is available, split it into first name and last name.",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "last_name": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
-      "default": "",
-      "aliases": [
-        "Last Name",
-        "Contact Last Name",
-        "Primary Contact Last Name"
+      "sources": [
+        "EMAIL",
+        "PDF"
       ],
-      "description": "Last name of primary contact. Extracted from the document when present. When the PDF filename identifies a client document, the pipeline also looks for a 'Print Name' field in the Certification & Signature section and splits it into first/last name if the LLM did not populate this field."
+      "default": null,
+      "aliases": [
+        "Company Contact",
+        "Benefit Contact Name",
+        "Company Contact Name",
+        "Benefit Contact",
+        "Last Name"
+      ],
+      "description": "Extract the last name of the company/benefit contact person. If a full name is provided, separate the surname/last name from the first name.",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "title": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
-      "default": "",
+      "sources": [
+        "EMAIL",
+        "PDF"
+      ],
+      "default": "Decision Maker",
       "aliases": [
         "Title",
         "Job Title",
         "Position",
         "Primary Contact Title"
       ],
-      "description": "Job title of primary contact - leave empty if not in GHQ or email"
+      "description": "Extract the contact person's job title. If 'Title' is not available, use 'Decision Maker'. Only use 'Decision Maker' as the fallback value when the contact is clearly identified as the decision maker.",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "contact_type": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
-      "default": "",
+      "sources": [
+        "EMAIL",
+        "PDF"
+      ],
+      "default": "Decision Maker",
       "aliases": [
         "Contact Type",
         "Type of Contact"
       ],
-      "description": "Type of contact (Owner, HR Manager, Decision Maker, etc.) - leave empty if not in GHQ or email"
+      "description": "Use the same value/rule as the title field. If the contact's title is available, use that title. If the title is not available and the fallback is Decision Maker, use Decision Maker.",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "email": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
+      "sources": [
+        "EMAIL",
+        "PDF"
+      ],
       "format": "email",
       "default": "",
       "aliases": [
         "Email",
-        "Email Address",
+        "Company Contact",
+        "Benefit Contact Name, Email, Phone",
         "Contact Email",
-        "Primary Contact Email"
+        "Email Address"
       ],
-      "description": "Email address of primary contact - leave empty if not in GHQ or email"
+      "description": "Extract the contact email address. Extract the actual email address associated with the identified company/benefit contact.",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "phone": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
-      "default": "",
+      "sources": [
+        "EMAIL",
+        "PDF"
+      ],
+      "default": null,
       "aliases": [
         "Phone",
-        "Telephone",
-        "Phone Number",
-        "Contact Phone"
+        "Company Contact",
+        "Benefit Contact Name, Email, Phone",
+        "Contact Phone",
+        "Phone Number"
       ],
-      "description": "Primary phone number - leave empty if not in GHQ or email"
+      "description": "Extract the contact's phone number.",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "cellphone": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
-      "default": "",
+      "sources": [
+        "EMAIL",
+        "PDF"
+      ],
+      "default": null,
       "aliases": [
         "Cellphone",
         "Cell Phone",
@@ -132,51 +188,73 @@
         "Mobile Phone",
         "Cell"
       ],
-      "description": "Mobile/cell phone number - leave empty if not in GHQ or email"
+      "description": "Extract the cellphone/mobile number only when explicitly available. Do not copy the regular phone number into this field unless the document explicitly identifies it as a cellphone/mobile number.",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "address": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
+      "sources": [
+        "EMAIL",
+        "PDF"
+      ],
       "aliases": [
         "Address",
-        "Street",
-        "Street Address",
-        "Billing Address",
-        "Address Line 1",
-        "Physical Address"
+        "Company Address",
+        "Business Address",
+        "Mailing Address"
       ],
-      "description": "Street address"
+      "description": "Extract the company/contact address.",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "city": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
+      "sources": [
+        "EMAIL",
+        "PDF"
+      ],
       "aliases": [
         "City",
         "Billing City"
       ],
-      "description": "City"
+      "description": "Extract the city. If 'City' is not separately provided, extract the city from the address field.",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "state": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
+      "sources": [
+        "EMAIL",
+        "PDF"
+      ],
       "aliases": [
         "State",
         "Billing State",
         "State/Province"
       ],
-      "description": "State abbreviation"
+      "description": "Extract the state. If 'State' is not separately provided, extract the state from the address field.",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "zipcode": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
+      "sources": [
+        "EMAIL",
+        "PDF"
+      ],
       "aliases": [
         "Zipcode",
         "Zip Code",
@@ -185,67 +263,102 @@
         "Postal Code",
         "ZIP"
       ],
-      "description": "ZIP or postal code"
+      "description": "Extract the ZIP/postal code. If not separately provided, extract it from the address field.",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "county": {
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
       "required": false,
-      "sources": ["EMAIL", "PDF"],
+      "sources": [
+        "EMAIL",
+        "PDF"
+      ],
       "aliases": [
         "County"
       ],
-      "description": "County name"
+      "description": "No extraction is required. Set this field to null.",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ],
+      "default": null
     },
-    
     "states_where_operating": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
-      "aliases": [
-        "States Where Operating",
-        "Operating States",
-        "States of Operation",
-        "Coverage States"
+      "sources": [
+        "EMAIL",
+        "PDF"
       ],
-      "description": "States where operating (ex: NJ, NY, PA)"
+      "aliases": [
+        "List states with current employees:",
+        "State of incorporation:",
+        "Please identify all states of operation:",
+        "State of operation",
+        "States of Operation",
+        "States of Operation (please check all that apply)"
+      ],
+      "description": "Extract all states where the company currently operates. If checkboxes are provided, include ONLY the states whose checkboxes are selected/checked. Do not include unchecked states. If multiple states are selected, return all selected states. Do not assume that the state of incorporation is the only state of operation.",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "website": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
+      "sources": [
+        "EMAIL",
+        "PDF"
+      ],
       "default": "No Website",
       "aliases": [
         "Website",
-        "Web Site",
-        "URL",
-        "Company Website"
+        "Company Website",
+        "Company Web Site",
+        "Website URL"
       ],
-      "description": "Company website URL"
+      "description": "Extract the company website.",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "fed_tax_id": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
-      "sourcePriority": ["EMAIL", "PDF"],
-      "aliases": [
-        "Fed Tax ID",
-        "Federal Tax ID",
-        "FEIN",
-        "Tax Id",
-        "FEIN/Tax Id",
-        "EIN",
-        "Employer ID"
+      "sources": [
+        "EMAIL",
+        "PDF"
       ],
-      "description": "Federal Employer Identification Number"
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ],
+      "aliases": [
+        "FEIN #",
+        "FEIN",
+        "Federal Tax ID",
+        "Federal Tax Identification Number",
+        "Tax ID",
+        "Federal EIN"
+      ],
+      "description": "Extract the Federal Tax ID / FEIN from the PDF first. If not found in PDF, search email. Otherwise return null.",
+      "default": null
     },
-    
     "corporation_type": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
+      "sources": [
+        "EMAIL",
+        "PDF"
+      ],
       "default": "Others",
       "allowedValues": [
         "Corporation",
@@ -269,64 +382,101 @@
         "enabled": true,
         "condition": "Only apply when corporation_type is not found or blank in the document",
         "rules": [
-          { "keyword": "LLC", "mapsTo": "LLC" },
-          { "keyword": "Corp", "mapsTo": "C-Corp" },
-          { "keyword": "INC", "mapsTo": "S-Corp" },
-          { "keyword": "LLP", "mapsTo": "LLP" }
+          {
+            "keyword": "LLC",
+            "mapsTo": "LLC"
+          },
+          {
+            "keyword": "Corp",
+            "mapsTo": "C-Corp"
+          },
+          {
+            "keyword": "INC",
+            "mapsTo": "S-Corp"
+          },
+          {
+            "keyword": "LLP",
+            "mapsTo": "LLP"
+          }
         ],
         "note": "Keywords are matched case-insensitively against location_name. If no keyword matches, fall back to default value."
       },
-      "description": "Type of business entity. If not found in the document, infer from keywords in location_name (LLC→LLC, Corp→C-Corp, INC→S-Corp, LLP→LLP). If no match, use default."
+      "description": "Determine the corporation type from the location/company legal name (e.g. ABC Company LLC -> LLC, ABC Company Inc. -> INC). Extract legal entity type explicitly. If no recognizable entity type is present, use 'Others'. Do not invent a type.",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "description_of_operations": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
+      "sources": [
+        "EMAIL",
+        "PDF"
+      ],
       "aliases": [
         "Description of Operations",
-        "Operations Description",
+        "Description_of_operations",
         "Business Description",
-        "What does the company do",
+        "Description of Business",
         "Nature of Business",
-        "SIC Code",
-        "Industry"
+        "Business Operations"
       ],
-      "description": "Description of business operations - can be derived from SIC code description (e.g., '2390 - Miscellaneous Fabricated Textile Products')"
+      "description": "Extract the company's business/operation description.",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "naics_number": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
-      "aliases": [
-        "NAICS #",
-        "NAICS",
-        "NAICS Code",
-        "NAICS Number",
-        "Industry Code"
+      "sources": [
+        "EMAIL",
+        "PDF"
       ],
-      "description": "NAICS industry classification code"
+      "aliases": [
+        "NAICS",
+        "NAICS Number",
+        "NAICS Code"
+      ],
+      "description": "Extract the NAICS code from PDF, then email. Otherwise return null.",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ],
+      "default": null
     },
-    
     "sic_number": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
-      "aliases": [
-        "SIC #",
-        "SIC",
-        "SIC Code",
-        "SIC Number"
+      "sources": [
+        "EMAIL",
+        "PDF"
       ],
-      "description": "SIC industry classification code"
+      "aliases": [
+        "SIC",
+        "SIC Number",
+        "SIC Code"
+      ],
+      "description": "Extract the SIC code from PDF, then email. Otherwise return null.",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ],
+      "default": null
     },
-    
     "prospect_type": {
-      "type": "string",
+      "type": [
+        "string",
+        "null"
+      ],
       "required": false,
-      "sources": ["EMAIL", "PDF"],
-      "default": "New Prospect",
+      "sources": [
+        "EMAIL",
+        "PDF"
+      ],
+      "default": null,
       "allowedValues": [
         "PEO",
         "ASO",
@@ -337,119 +487,163 @@
       ],
       "aliases": [
         "Prospect Type",
-        "Offering Type",
-        "Service Type",
-        "Product Type"
+        "Type of Prospect",
+        "Prospect Category"
       ],
-      "description": "Type of prospect/offering"
+      "description": "Extract the prospect type if explicitly provided in the PDF or email. If not available, return null. Do not infer the prospect type.",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "lead_source": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL"],
-      "aliases": [
-        "Lead Source",
-        "Lead/Ref/Opp Source",
-        "Referral Source",
-        "Source"
+      "sources": [
+        "EMAIL"
       ],
-      "description": "Source of the lead/referral"
+      "aliases": [
+        "Lead/Ref/Opp Source:",
+        "Lead Source",
+        "Referral Source",
+        "Opportunity Source",
+        "Lead/Ref/Opp Source"
+      ],
+      "description": "Extract only from the email/mail when available. Use the value associated with the email. If not available, return null.",
+      "default": null
     },
-    
     "current_carrier_tpa": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
-      "aliases": [
-        "Current Carrier / TPA",
-        "Current Carrier",
-        "Current Medical Carrier",
-        "Medical Carrier",
-        "Health Carrier",
-        "TPA"
+      "sources": [
+        "EMAIL",
+        "PDF"
       ],
-      "description": "Current insurance carrier or TPA"
+      "aliases": [
+        "Name of current PEO",
+        "Who is your current PEO/Payroll Vendor?",
+        "Current payroll provider and annual cost if outsourced",
+        "Current Payroll Provider:",
+        "With a PEO? Yes / No",
+        "If yes, which PEO and time frame?"
+      ],
+      "description": "Extract the company's current PEO, payroll provider, or TPA information. Extract actual name. If both Yes/No question and provider name exist, use provider name.",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "additional_carrier": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
+      "sources": [
+        "EMAIL",
+        "PDF"
+      ],
+      "default": "NAN",
       "aliases": [
         "Additional Carrier",
         "Secondary Carrier",
         "WC Carrier",
         "Workers Comp Carrier"
       ],
-      "description": "Additional carrier (WC, etc.)"
+      "description": "No extraction is required. Always set this field to NAN.",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "carrier": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
+      "sources": [
+        "EMAIL",
+        "PDF"
+      ],
       "default": "",
       "aliases": [
-        "Carrier"
+        "Current Medical Carrier:",
+        "Medical Carrier:",
+        "Current Medical Insurance Carrier",
+        "Medical Insurance Carrier"
       ],
-      "description": "Insurance carrier name - leave empty if not specified separately from current_carrier_tpa"
+      "description": "Extract the current medical insurance carrier from PDF, then email.",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "current_pr_peo_provider": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
+      "sources": [
+        "EMAIL",
+        "PDF"
+      ],
       "default": "No Carrier",
       "aliases": [
-        "Current PR/PEO Provider",
         "Current PEO",
-        "Current PR Provider",
         "Current Payroll Provider",
-        "Payroll Provider"
+        "Current Payroll Provider and annual cost if outsourced",
+        "Who is your current PEO/Payroll Vendor?",
+        "With a PEO? If yes, which PEO and time frame?"
       ],
-      "description": "Current payroll or PEO provider"
+      "description": "Extract the current payroll/PEO provider information. Do not confuse medical carrier with payroll/PEO provider.",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "renewal_date_of_current_coverage": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
+      "sources": [
+        "EMAIL",
+        "PDF"
+      ],
       "format": "date",
       "outputFormat": "YYYY-MM-DD",
       "aliases": [
-        "Renewal date of the Current Coverage",
+        "Renewal Date of Current Coverage",
         "Renewal Date",
-        "Current Renewal Date",
-        "Medical Renewal Date",
-        "Policy Renewal Date",
-        "Coverage Renewal"
+        "Renewal",
+        "Current Coverage Renewal Date"
       ],
-      "description": "Renewal date of current coverage"
+      "description": "Extract the current coverage renewal date from PDF, then email.",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "requested_effective_date": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
+      "sources": [
+        "EMAIL",
+        "PDF"
+      ],
       "format": "date",
       "outputFormat": "YYYY-MM-DD",
       "aliases": [
         "Requested Effective Date",
         "Effective Date",
-        "Benefits Effective Date",
-        "Start Date",
-        "Policy Effective Date",
-        "Proposed Effective Date"
+        "Requested Date",
+        "Coverage Effective Date"
       ],
-      "description": "Requested effective date for new coverage"
+      "description": "Extract the requested/effective coverage start date from PDF, then email.",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "payroll_frequency": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
-      "default": "No Payroll Frequency In GHQ",
+      "sources": [
+        "EMAIL",
+        "PDF"
+      ],
+      "default": "Weekly",
       "allowedValues": [
         "Weekly",
         "Bi-Weekly",
@@ -459,17 +653,24 @@
         "Other"
       ],
       "aliases": [
+        "Payroll Cycle",
+        "Current Payroll Cycle",
         "Payroll Frequency",
-        "Pay Frequency",
-        "Payroll Schedule"
+        "Pay Frequency"
       ],
-      "description": "Frequency of payroll processing"
+      "description": "Extract the payroll frequency/cycle (e.g. Weekly, Biweekly, Semi-Monthly, Monthly).",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "percentage_of_ownership": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
+      "sources": [
+        "EMAIL",
+        "PDF"
+      ],
       "default": "1%",
       "aliases": [
         "% of Ownership",
@@ -477,24 +678,36 @@
         "Ownership Percentage",
         "Ownership %"
       ],
-      "description": "Percentage of ownership"
+      "description": "Percentage of ownership",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "ownership_option": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
+      "sources": [
+        "EMAIL",
+        "PDF"
+      ],
       "default": "Publically Traded",
       "aliases": [
         "Ownership Option"
       ],
-      "description": "Ownership option details"
+      "description": "Ownership option details",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "inc_exc": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL", "PDF"],
+      "sources": [
+        "EMAIL",
+        "PDF"
+      ],
       "default": "No",
       "allowedValues": [
         "Included",
@@ -510,13 +723,18 @@
         "Included/Excluded",
         "INC"
       ],
-      "description": "Inclusion or exclusion status"
+      "description": "Inclusion or exclusion status",
+      "sourcePriority": [
+        "PDF",
+        "EMAIL"
+      ]
     },
-    
     "share_file_client_folder_link": {
       "type": "string",
       "required": false,
-      "sources": ["EMAIL"],
+      "sources": [
+        "EMAIL"
+      ],
       "default": "Need to Capture in SF",
       "aliases": [
         "Share File Client Folder Link",
@@ -528,22 +746,21 @@
       "description": "Link to shared file or client folder"
     }
   },
-  
   "globalRules": [
-    "Extract only data explicitly present in the documents",
-    "Do not invent, guess, or hallucinate values",
-    "Use the configured default value for missing optional fields",
-    "Preserve exact spelling and formatting for IDs and codes",
-    "Convert dates to ISO 8601 format (YYYY-MM-DD) when outputFormat is specified",
-    "For fields with allowedValues, only use values that match the list (case-insensitive)",
-    "When a field appears in both EMAIL and PDF, use sourcePriority to select",
-    "Extract FEIN/Tax IDs with exact formatting (including dashes)",
-    "Extract Salesforce links and IDs from URLs if present",
-    "If a GHQ field is blank or shows only the label with no value, use the default value",
-    "Recognize patterns like 'No DBA', 'No Website', 'No Carrier' as intentional indicators of absence",
-    "When description_of_operations references SIC code description, extract that as the operations description"
+    "Extract information primarily from the PDF/document.",
+    "If a field is not available in the PDF and the field allows email extraction, extract it from the email/mail content.",
+    "Search for the field using the listed labels, variations, and equivalent wording.",
+    "Do not hallucinate or infer information that is not supported by the PDF or email.",
+    "If a field has an explicitly defined default value below, use that default when the required information is not available.",
+    "If no value is available and no default is specified, return null.",
+    "Preserve the original value as much as possible, while cleaning obvious formatting issues such as extra spaces.",
+    "For checkbox-based fields, identify the options that are actually selected/checked. Do not include unchecked options.",
+    "When extracting names, separate the first name and last name from the identified contact person.",
+    "When both PDF and email contain the same field, prefer the PDF value, unless otherwise specified.",
+    "Never generate an email address from a person's name or invent a phone number.",
+    "Never assume a state is operating unless it is explicitly identified or selected.",
+    "If city, state, or ZIP code is missing as a separate field, extract it from the address when possible."
   ],
-  
   "outputSettings": {
     "includeFieldSources": true,
     "includeConflicts": true,

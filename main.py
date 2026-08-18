@@ -1096,6 +1096,11 @@ class ExtractionService:
             data, field_sources, fields_config
         )
 
+        # Apply custom fallback for states_where_operating
+        if not data.get("states_where_operating") and data.get("state"):
+            data["states_where_operating"] = data["state"]
+            field_sources["states_where_operating"] = "FALLBACK_FROM_STATE"
+
         missing_required = sorted(set(missing_required_llm) | set(missing_required_defaults))
         all_warnings = collected_warnings + list(llm_warnings)
 

@@ -127,7 +127,10 @@ async def extract_prospect_data(
             detail="OPENAI_API_KEY is not configured. Add it to your .env file.",
         )
 
-    work_dir = Path(tempfile.mkdtemp(prefix="pricing_point_api_"))
+    timestamp = __import__("datetime").datetime.now().strftime("%Y%m%d_%H%M%S")
+    case_id = f"case_{timestamp}_{uuid.uuid4().hex[:6]}"
+    work_dir = PROJECT_ROOT / "output" / case_id
+    work_dir.mkdir(parents=True, exist_ok=True)
     output_path = work_dir / "prospect_data.json"
 
     try:
@@ -138,7 +141,7 @@ async def extract_prospect_data(
         email_path.write_bytes(await email_file.read())
 
         config = PipelineConfig()
-        config.work_dir = str(work_dir / "pipeline_workspace")
+        config.work_dir = str(work_dir)
         config.enable_rotation_fix = not no_rotation
         config.extraction_method = extraction_method
         config.keep_intermediate_files = True
@@ -217,7 +220,8 @@ async def extract_prospect_data(
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     finally:
-        shutil.rmtree(work_dir, ignore_errors=True)
+        # Keep the output folder as requested
+        pass
 
 
 @app.get("/openapi.yaml", include_in_schema=False)
