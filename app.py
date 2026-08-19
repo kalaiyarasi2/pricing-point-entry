@@ -765,6 +765,20 @@ class DocumentProcessingPipeline:
                     "skipping Print Name extraction."
                 )
 
+            # Apply custom fallback for states_where_operating
+            _data = result.setdefault("data", {})
+            _sources = result.setdefault("fieldSources", {})
+            
+            states_op = _data.get("states_where_operating")
+            is_states_empty = not states_op or (isinstance(states_op, str) and states_op.strip().lower() in ("", "null", "none", "n/a", "[]"))
+            
+            state_val = _data.get("state")
+            is_state_valid = state_val and not (isinstance(state_val, str) and state_val.strip().lower() in ("", "null", "none", "n/a"))
+            
+            if is_states_empty and is_state_valid:
+                _data["states_where_operating"] = _data["state"]
+                _sources["states_where_operating"] = "FALLBACK_FROM_STATE"
+
             # Save output
             with open(output_path, 'w', encoding='utf-8') as f:
                 json.dump(result, f, indent=2, ensure_ascii=False)

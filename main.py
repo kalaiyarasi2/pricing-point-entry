@@ -1097,7 +1097,13 @@ class ExtractionService:
         )
 
         # Apply custom fallback for states_where_operating
-        if not data.get("states_where_operating") and data.get("state"):
+        states_op = data.get("states_where_operating")
+        is_states_empty = not states_op or (isinstance(states_op, str) and states_op.strip().lower() in ("", "null", "none", "n/a", "[]"))
+        
+        state_val = data.get("state")
+        is_state_valid = state_val and not (isinstance(state_val, str) and state_val.strip().lower() in ("", "null", "none", "n/a"))
+        
+        if is_states_empty and is_state_valid:
             data["states_where_operating"] = data["state"]
             field_sources["states_where_operating"] = "FALLBACK_FROM_STATE"
 
