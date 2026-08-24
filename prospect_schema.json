@@ -628,9 +628,17 @@
         "Requested Effective Date",
         "Effective Date",
         "Requested Date",
-        "Coverage Effective Date"
+        "Coverage Effective Date",
+        "Benefits Effective Date"
       ],
-      "description": "Extract the requested/effective coverage start date from PDF, then email.",
+      "description": "Extract the requested/effective coverage start date. First search the PDF/GHQ. If not found in the PDF/GHQ, search the EMAIL for 'Benefits Effective Date' (e.g. 'Benefits Effective Date: October 1, 2026') and use that date.",
+      "conditions": [
+        "If requested_effective_date is not available in the PDF/GHQ, extract it from the EMAIL using the label 'Benefits Effective Date'.",
+        "Convert the extracted date to YYYY-MM-DD format (e.g. 'October 1, 2026' becomes '2026-10-01')."
+      ],
+      "normalization": [
+        "date_to_iso"
+      ],
       "sourcePriority": [
         "PDF",
         "EMAIL"
