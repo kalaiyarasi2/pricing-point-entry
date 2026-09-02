@@ -792,6 +792,16 @@ class DocumentProcessingPipeline:
             _data["corporation_type"] = _ct_value
             _sources["corporation_type"] = "DERIVED_FROM_LOCATION_NAME"
 
+            # Apply dynamic mapping for lead_source
+            _lead_source_mapping = {
+                "External Channel Partner": "External Partner",
+                "Cold Calls": "Cold Call"
+            }
+            _lead_source_val = _data.get("lead_source")
+            if _lead_source_val and _lead_source_val in _lead_source_mapping:
+                _data["lead_source"] = _lead_source_mapping[_lead_source_val]
+                _sources["lead_source"] = "MAPPED_DYNAMICALLY"
+
             # Save output
             with open(output_path, 'w', encoding='utf-8') as f:
                 json.dump(result, f, indent=2, ensure_ascii=False)
