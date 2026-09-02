@@ -536,6 +536,14 @@ class PromptBuilder:
                 lines.append(f"    enum: {definition.get('enum')}")
             if definition.get("conditions"):
                 lines.append(f"    conditions: {definition.get('conditions')}")
+            if definition.get("inferFromLocationName"):
+                inf = definition["inferFromLocationName"]
+                lines.append(f"    inferFromLocationName.enabled: {inf.get('enabled')}")
+                lines.append(f"    inferFromLocationName.condition: {inf.get('condition')}")
+                if inf.get("rules"):
+                    lines.append(f"    inferFromLocationName.rules: {json.dumps(inf.get('rules'))}")
+                if inf.get("note"):
+                    lines.append(f"    inferFromLocationName.note: {inf.get('note')}")
             if definition.get("normalization"):
                 lines.append(f"    normalization: {definition.get('normalization')}")
             if definition.get("items"):
@@ -1107,6 +1115,11 @@ class ExtractionService:
             data["states_where_operating"] = data["state"]
             field_sources["states_where_operating"] = "FALLBACK_FROM_STATE"
 
+        # Deterministically derive corporation_type from the location_name legal
+        # name suffix. This ALWAYS overrides whatever the LLM returned so the rule
+        # is enforced regardless of any explicit entity label in the document.
+        data, field_sources = self._apply_corporation_type_from_location_name(data, field_sources)
+
         missing_required = sorted(set(missing_required_llm) | set(missing_required_defaults))
         all_warnings = collected_warnings + list(llm_warnings)
 
@@ -1142,6 +1155,31 @@ class ExtractionService:
         except ResponseParseError as exc:
             LOGGER.debug("Parse failure: %s", exc.message)
             return None
+
+    def _apply_corporation_type_from_location_name(
+        self, data: dict[str, Any], field_sources: dict[str, Any]
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        field_key = "corporation_type"
+        location_name = str(data.get("location_name") or "")
+        rules = [
+            ("LLC", "LLC"),
+            ("Corp", "C-Corp"),
+            ("INC", "S-Corp"),
+            ("LLP", "LLP"),
+        ]
+
+        suffix, mapped = None, None
+        for keyword, target in rules:
+            match = re.search(re.escape(keyword) + r"\s*[.,]?$", location_name, flags=re.IGNORECASE)
+            if match:
+                suffix, mapped = keyword, target
+                break
+
+        derived = mapped if suffix else "Others"
+        data[field_key] = derived
+        field_sources[field_key] = "DERIVED_FROM_LOCATION_NAME"
+        return data, field_sources
+
 
 
 # ---------------------------------------------------------------------------

@@ -380,7 +380,7 @@
       ],
       "inferFromLocationName": {
         "enabled": true,
-        "condition": "Only apply when corporation_type is not found or blank in the document",
+        "condition": "ALWAYS use the location_name legal name suffix as the PRIMARY source. Every corporation_type value MUST be derived from and consistent with the location_name. Ignore any explicit entity label in the document unless it matches the location_name suffix.",
         "rules": [
           {
             "keyword": "LLC",
@@ -399,9 +399,9 @@
             "mapsTo": "LLP"
           }
         ],
-        "note": "Keywords are matched case-insensitively against location_name. If no keyword matches, fall back to default value."
+        "note": "Keywords are matched case-insensitively against location_name (e.g. 'INC', 'Inc', 'inc', 'Inc.' all match the INC rule). Ignore any trailing period, comma, or space after the keyword. If no keyword matches the location_name suffix, use 'Others' regardless of what any explicit entity label in the document says."
       },
-      "description": "Determine the corporation type from the location/company legal name (e.g. ABC Company LLC -> LLC, ABC Company Inc. -> INC). Extract legal entity type explicitly. If no recognizable entity type is present, use 'Others'. Do not invent a type.",
+      "description": "Determine the corporation type ONLY from the location_name legal name suffix using the inference rules below (e.g. ABC Company LLC -> LLC, ABC Company Inc. -> S-Corp). The location_name is the primary and required check: ALWAYS inspect location_name first. If location_name contains a matching suffix (LLC, Corp, INC, LLP), use the mapped value. If location_name does NOT contain any matching suffix, return 'Others' — even if the document contains an explicit entity label such as 'Corporation Type:', 'Entity Type:', 'Business Structure:', 'Legal Entity Type:' or 'Incorporation Type:'. Do NOT trust an explicit document entity label unless it is confirmed by the location_name suffix. Do NOT treat free-form descriptive words in the business description (e.g. the word 'corporate' in a 'Nature of Business' line) as an entity type. Do not invent a type.",
       "sourcePriority": [
         "PDF",
         "EMAIL"

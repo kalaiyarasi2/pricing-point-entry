@@ -779,6 +779,19 @@ class DocumentProcessingPipeline:
                 _data["states_where_operating"] = _data["state"]
                 _sources["states_where_operating"] = "FALLBACK_FROM_STATE"
 
+            # Deterministically derive corporation_type from the location_name legal
+            # name suffix. This ALWAYS overrides whatever the LLM returned so the rule
+            # is enforced regardless of any explicit entity label in the document.
+            _location = str(_data.get("location_name") or "")
+            _ct_rules = [("LLC", "LLC"), ("Corp", "C-Corp"), ("INC", "S-Corp"), ("LLP", "LLP")]
+            _ct_value = "Others"
+            for _keyword, _target in _ct_rules:
+                if re.search(re.escape(_keyword) + r"\s*[.,]?$", _location, flags=re.IGNORECASE):
+                    _ct_value = _target
+                    break
+            _data["corporation_type"] = _ct_value
+            _sources["corporation_type"] = "DERIVED_FROM_LOCATION_NAME"
+
             # Save output
             with open(output_path, 'w', encoding='utf-8') as f:
                 json.dump(result, f, indent=2, ensure_ascii=False)
